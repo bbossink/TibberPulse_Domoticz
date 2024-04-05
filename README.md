@@ -1,4 +1,4 @@
-Credits to MSkjel for his original work on LocalPulse2Tibber! (https://github.com/MSkjel/LocalPulse2Tibber?tab=readme-ov-file)<br>
+Credits to MSkjel for his original work on LocalPulse2Tibber! (https://github.com/MSkjel/LocalPulse2Tibber)<br>
 Edited his Readme.md file to match integration in domoticz.
 
 # Introduction
