@@ -1,21 +1,21 @@
-Credits to MSkjel/LocalPulse2Tibber for his original work on LocalPulse2Tibber! (https://github.com/MSkjel/LocalPulse2Tibber?tab=readme-ov-file)
+Credits to MSkjel for his original work on LocalPulse2Tibber! <br>
+(https://github.com/MSkjel/LocalPulse2Tibber?tab=readme-ov-file)<br>
 Edited his Readme.md file to match integration in domoticz.
 
-# TibberPulse2Domoticz and bridging data to Tibber server
+# Introduction
 A writeup of how to make a Tibber Pulse work locally while still sending data to Tibber.
-This is based on the Norwegian version of the Pulse, which is directly connected to the AMS meter using MBUS. It might also work with other versions supplied by Tibber, but this is untested from my part.
-This writeup is quite messy and could probably be cleaned up alot. Sorry for that, I tried including alot of pictures for reference
+This setup is based and tested on Dutch version of the Pulse, which is directly connected to the electricity meter using the P1 connector. It might also work with other versions supplied by Tibber, but this is untested from my part.
 
 ## Whats needed
 - Debian installation with Domoticz (eg raspberry pi)
 - Mosquitto MQTT broker (https://randomnerdtutorials.com/how-to-install-mosquitto-broker-on-raspberry-pi/)
 - A Tibber Pulse (get it via Tibber store)
-- Basic knowledge of electronics and linux
+- Basic knowledge of linux
 
 # How to
 1. Extract SSL/TLS Certificates using [App](#app-method) 
-2. Setup MQTT Broker As Bridge [HomeAssistant Supervised](#setup-mqtt-broker-as-bridge) or [Other MQTT Broker](#using-local-mqtt-broker-not-hosted-on-homeassistant-supervised)
-3. Connect Pulse to your local broker [Pulse Setup](#pulse-setup)
+2. Setup MQTT Broker As Bridge [Setup Mosquitto MQTT Broker as bridge](#Setup Mosquitto MQTT Broker as bridge)
+3. Connect Pulse to your local broker to display data in Domoticz and bridge data to Tibber[Pulse Setup](#pulse-setup)
 
 # Extract SSL/TLS Certificates
 ## App Method
@@ -48,35 +48,23 @@ This writeup is quite messy and could probably be cleaned up alot. Sorry for tha
 20. After a while, the Pulse should show an empty page with just some numbers and characters at the top. Like 8f5g6e6h5f. If it shows MQTTErr or WiFiErr you have to redo everything.
 21. Check that the Pulse now shows on the main screen of the Tibber app(It wont have any data, just make sure the bubble is there. You might have to force-quit the app and restart it for it to show up).
 
-## UART/Serial Method
-//To come. Basically, the Pulse spits out everything the app sends to it when you connect it to the tibber app. It does require you to open the Pulse and connect a serial debugger to the TX/RX pins and make the pulse and the debugger share a common ground, but not power! The pulse needs to be connected to USB power while doing this The rough idea is to just listen for serial data while connecting it to the app. The output is in the same format you can see in step 12.
 
-# Setup MQTT Broker As Bridge
+# Setup Mosquitto MQTT Broker as bridge
+Create directory pulse_certs in /etc/mosquitto and make a new file called bridge.conf in /etc/mosquitto/conf.d:
+```
+sudo mkdir /etc/mosquitto/pulse_certs
+sudo touch /etc/mosquitto/conf.d/bridge.conf
+``` 
 
-## Using HomeAssistant Supervised
-1. Make sure you have the MQTT addon installed
-2. Make a user for the Pulse (If you have not made one already or you are allowing anonymous connections)
-3. Open Studio Code Server or an equivalent File Editor on the HomeAssistant instance
-4. Press the hamburger menu > File > Open Folder 
-![image](https://user-images.githubusercontent.com/7550920/199342156-9585817d-3611-4f94-92b5-8e469a6f5890.png)
-5. Enter `/root/` and press enter
-![image](https://user-images.githubusercontent.com/7550920/199342265-46d148c6-8afb-46fa-b089-f7942b4c9d99.png)
-6. Navigate to or create a directory called `share` if it doesnt exist.
-7. Create a directory called `mosquitto` under `share`
-8. Create a new directory called `tibber_cert` or something equivalent you remember under `mosquitto`
-9. Create a new file called `bridge.conf` under `mosquitto`
-Now the directory structure should look like this
-![image](https://user-images.githubusercontent.com/7550920/199342856-16bedba8-b268-426b-9529-9a31be1e882f.png)
-10. Move the CA.ca, Cert.crt and Priv.key files to the `tibber_cert` folder
-![image](https://user-images.githubusercontent.com/7550920/199343069-aa4e202d-adbd-4c41-a564-e8bc1d17ce42.png)
-11. Locate the Pulse-ID which can be found in the mqtt_info file we created earlier.
-![image](https://user-images.githubusercontent.com/7550920/199972051-ca42b193-9891-43f1-a3ca-01150bc6eae9.png)
-12. Paste this into the bridge.conf file. (Make sure your mqtt_url is the same as mine, if not change `connection blabla:8883` to whatever you have in the code below) 
+Copy CA.ca, Cert.crt and Priv.key in /etc/mosquitto/pulse_certs/
+
+Paste this into the bridge.conf file (sudo nano bridge.conf).
+Make sure your mqtt_url is the same as mine, if not change `connection blabla:8883` to whatever you have in the code below
 ```
 connection bridge-to-tibber
-bridge_cafile /share/mosquitto/tibber_cert/CA.ca
-bridge_certfile /share/mosquitto/tibber_cert/Cert.crt
-bridge_keyfile /share/mosquitto/tibber_cert/Priv.key
+bridge_cafile /etc/mosquitto/pulse_certs/CA.ca
+bridge_certfile /etc/mosquitto/pulse_certs/Cert.crt
+bridge_keyfile /etc/mosquitto/pulse_certs/Priv.key
 address a1zhmn1192zl1a.iot.eu-west-1.amazonaws.com:8883
 clientid tibber-pulse-[Remove this and fill in your Pulse-ID]
 try_private false
@@ -85,16 +73,24 @@ notifications false
 topic $aws/# out
 topic tibber-pulse-[Remove this and fill in your Pulse-ID]/receive in
 ``` 
-It should look like this
-![image](https://user-images.githubusercontent.com/7550920/199347703-a9374796-d92a-4317-a0f0-2240ca7ea236.png)
-13. Open the Mosquitto addon Configuration
-14. Set `active: true and folder: mosquitto` under Customize
-![image](https://user-images.githubusercontent.com/7550920/199340791-758b5b1b-eae0-48cd-9631-88d64a8d0f96.png)
-15. Save the configuration and restart the addon.
-16. Make sure the log from the addon doesnt show any errors.
 
-# Using local MQTT Broker not hosted on HomeAssistant Supervised
-All the steps above are relevant. Just paste everything I have in the `.conf` file above into your MQTT Broker config file. And change the directories to some local directory.
+restart mosquitto service and check log for errors:
+```
+sudo systemctl restart mosquitto.service
+sudo cat /var/log/mosquitto/mosquitto.log
+```
+
+Log should look like this:
+```
+1712258457: mosquitto version 2.0.11 starting
+1712258457: Config loaded from /etc/mosquitto/mosquitto.conf.
+1712258457: Opening ipv4 listen socket on port 1883.
+1712258457: Opening ipv6 listen socket on port 1883.
+1712258457: Connecting bridge (step 1) bridge-to-tibber (a1zhmn1192zl1a.iot.eu-west-1.amazonaws.com:8883)
+1712258457: mosquitto version 2.0.11 running
+1712258457: Connecting bridge (step 2) bridge-to-tibber (a1zhmn1192zl1a.iot.eu-west-1.amazonaws.com:8883)
+```
+
 
 # Pulse Setup
 1. Reset the Pulse again, but DO NOT disconnect it in the Tibber app.
