@@ -1,18 +1,19 @@
-# LocalPulse2Tibber
+Credits to MSkjel/LocalPulse2Tibber for his original work on LocalPulse2Tibber! (https://github.com/MSkjel/LocalPulse2Tibber?tab=readme-ov-file)
+Edited his Readme.md file to match integration in domoticz.
+
+# TibberPulse2Domoticz and bridging data to Tibber server
 A writeup of how to make a Tibber Pulse work locally while still sending data to Tibber.
 This is based on the Norwegian version of the Pulse, which is directly connected to the AMS meter using MBUS. It might also work with other versions supplied by Tibber, but this is untested from my part.
 This writeup is quite messy and could probably be cleaned up alot. Sorry for that, I tried including alot of pictures for reference
 
 ## Whats needed
-- A local MQTT Broker
-- A Tibber Pulse
-- Optionally a UART/Serial adapter
-- Basic knowledge of electronics
+- Debian installation with Domoticz (eg raspberry pi)
+- Mosquitto MQTT broker (https://randomnerdtutorials.com/how-to-install-mosquitto-broker-on-raspberry-pi/)
+- A Tibber Pulse (get it via Tibber store)
+- Basic knowledge of electronics and linux
 
 # How to
-1. Extract SSL/TLS Certificates using either: 
-   - [App](#app-method) 
-   - [UART/Serial](#uartserial-method)
+1. Extract SSL/TLS Certificates using [App](#app-method) 
 2. Setup MQTT Broker As Bridge [HomeAssistant Supervised](#setup-mqtt-broker-as-bridge) or [Other MQTT Broker](#using-local-mqtt-broker-not-hosted-on-homeassistant-supervised)
 3. Connect Pulse to your local broker [Pulse Setup](#pulse-setup)
 
